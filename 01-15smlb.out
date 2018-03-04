@@ -1,0 +1,58 @@
+
+Time simulation ended:    4800.000 minutes
+
+c. Average and maximum number on the bus
+
+ sampst                         Number
+variable                          of
+ number       Average           values          Maximum          Minimum
+________________________________________________________________________
+
+    5         18.4260          453.000          20.0000          14.0000 
+________________________________________________________________________
+
+
+
+d. Average, maximum, and minimum time the bus stopped in each location
+
+ sampst                         Number
+variable                          of
+ number       Average           values          Maximum          Minimum
+________________________________________________________________________
+
+    1         2.90313          150.000          4.81789         0.933614 
+
+    2         2.22178          151.000          4.39547         0.377220 
+
+    3         6.66414          151.000          7.29925          6.12978 
+________________________________________________________________________
+
+
+
+e. Average, maximum, and minimum time for the bus to make a loop
+
+ sampst                         Number
+variable                          of
+ number       Average           values          Maximum          Minimum
+________________________________________________________________________
+
+    4         16.2277          151.000          31.2333          15.4978 
+________________________________________________________________________
+
+
+
+f. Average, maximum, and minimum time a person is in the system by arrival location
+
+ sampst                         Number
+variable                          of
+ number       Average           values          Maximum          Minimum
+________________________________________________________________________
+
+    6         2409.59          2324.00          4789.15          0.00000 
+
+    7         2235.47          1995.00          4799.61          0.00000 
+
+    8         2051.96          1025.00          4799.94          0.00000 
+________________________________________________________________________
+
+
