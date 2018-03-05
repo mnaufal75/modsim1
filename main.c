@@ -20,7 +20,6 @@
 #define LIST_TEMP_1			7
 #define LIST_TEMP_2			8
 #define LIST_TEMP_3			9
-#define LIST_TEMP_4			10
 
 #define STREAM_INTERARRIVAL_1	1
 #define STREAM_INTERARRIVAL_2	2
@@ -34,6 +33,9 @@
 #define SAMPST_QUEUE_3_TIME      3
 #define SAMPST_LOOP_TIME      	 4
 #define SAMPST_NUMBER_BUS        5
+#define SAMPST_WAITING_TIME_1	 6
+#define SAMPST_WAITING_TIME_2	 7
+#define SAMPST_WAITING_TIME_3	 8
 
 double mean_interarrival1, mean_interarrival2, mean_interarrival3, min_loading, max_loading, min_unloading, max_unloading, time_end, time_loop;
 
@@ -49,44 +51,47 @@ void init_model() {
 	event_schedule(time_end, EVENT_ENDOFTIME);
 	float time = 0;
 	while (time < 4800) {
-		time += expon(mean_interarrival1, STREAM_INTERARRIVAL_1);
 		event_schedule(time, EVENT_INTERARRIVAL_1);
 		list_file(LAST, LIST_QUEUE_1);
+		time += expon(mean_interarrival1, STREAM_INTERARRIVAL_1);
 	}
 	time = 0;
 	while (time < 4800) {
-		time += expon(mean_interarrival2, STREAM_INTERARRIVAL_2);
 		event_schedule(time, EVENT_INTERARRIVAL_2);
 		list_file(LAST, LIST_QUEUE_2);
+		time += expon(mean_interarrival2, STREAM_INTERARRIVAL_2);
 	}
 	time = 0;
 	while (time < 4800) {
-		time += expon(mean_interarrival3, STREAM_INTERARRIVAL_3);
 		event_schedule(time, EVENT_INTERARRIVAL_3);
 		list_file(LAST, LIST_QUEUE_3);
+		time += expon(mean_interarrival3, STREAM_INTERARRIVAL_3);
 	}
 	
 	float j = 0;
-	while (j < 300/* && (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20*/) {
+	while (j < 5 && (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20) {
 		list_remove(FIRST, LIST_QUEUE_1);
-		if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] < 20) {
+		float temp;
+		if (j < 5) {
 			int random = random_integer(prob_distrib, STREAM_DESTINATION);
 			if (random == 1) {
 				list_file (LAST, LIST_BUS_1);
+				temp = transfer[1];
 			} else if (random == 2) {
 				list_file (LAST, LIST_BUS_2);
+				temp = transfer[1];
 			}
 			j += uniform(min_loading, max_loading, STREAM_LOADING);
-		} else if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] >= 20) {
+			if (sim_time + j - temp < 0) {
+				sampst(0, SAMPST_WAITING_TIME_1);
+			} else {
+				sampst(sim_time - temp, SAMPST_WAITING_TIME_1);
+			}
+		} else if (j >= 5) {
 			list_file(FIRST, LIST_QUEUE_1);
-			list_file(FIRST, LIST_TEMP_1);
 		}
 	}
 
-	filest(LIST_TEMP_1);
-	while (list_size[LIST_TEMP_1] > 0) {	
-		list_remove(FIRST, LIST_TEMP_1);
-	}
 	sampst(list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3], SAMPST_NUMBER_BUS);
 	event_schedule(sim_time + j, EVENT_LOADING_1);
 	
@@ -108,26 +113,32 @@ void service_1() {
 	time_loop = sim_time;
 
 	float j = 0;
-	while (j < 300 /*&& (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20*/) {
-		list_remove(FIRST, LIST_QUEUE_1);
-		if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] < 20) {
+	while (j < 5 && (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20) {
+		float temp;
+		// if (list_size[LIST_QUEUE_1] > 0) {
+		// 	list_remove(FIRST, LIST_QUEUE_1);
+		// }
+		
+		if (j < 5) {
 			int random = random_integer(prob_distrib, STREAM_DESTINATION);
 			if (random == 1) {
 				list_file (LAST, LIST_BUS_1);
+				temp = transfer[1];
 			} else if (random == 2) {
 				list_file (LAST, LIST_BUS_2);
+				temp = transfer[1];
 			}
 			j += uniform(min_loading, max_loading, STREAM_LOADING);
-		} else if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] >= 20) {
+			if (sim_time - temp > 0) {
+				sampst(sim_time + j - temp, SAMPST_WAITING_TIME_1);
+			} else {
+				sampst(0, SAMPST_WAITING_TIME_1);
+			}
+		} else if (j >= 5) {
 			list_file(FIRST, LIST_QUEUE_1);
-			list_file(FIRST, LIST_TEMP_1);
 		}
 	}
 
-	filest(LIST_TEMP_1);
-	while (list_size[LIST_TEMP_1] > 0) {	
-		list_remove(FIRST, LIST_TEMP_1);
-	}
 	sampst(list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3], SAMPST_NUMBER_BUS);
 	event_schedule(sim_time + j, EVENT_LOADING_1);
 
@@ -142,26 +153,30 @@ void service_1() {
 	while (list_size[LIST_BUS_1] > 0) {
 		list_remove(FIRST, LIST_BUS_1);
 	}
-	printf("%f\n", sim_time);
+	// printf("%f\n", sim_time);
 }
 
 void service_2() {
 	float j = 0;
-	while (j < 300 /*&& (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20*/) {
-		list_remove(FIRST, LIST_QUEUE_2);
-		if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] < 20) {
+	while (j < 5 && (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20) {
+		float temp;
+		// if (list_size[LIST_QUEUE_2] > 0) {
+		// 	list_remove(FIRST, LIST_QUEUE_2);
+		// }
+		temp = transfer[1];
+		if (j < 5) {
 			list_file (LAST, LIST_BUS_3);
 			j += uniform(min_loading, max_loading, STREAM_LOADING);
-		} else if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] >= 20) {
+			if (sim_time - temp > 0) {
+				sampst(sim_time + j - temp, SAMPST_WAITING_TIME_2);
+			} else {
+				sampst(0, SAMPST_WAITING_TIME_2);
+			}
+		} else if (j >= 5) {
 			list_file(FIRST, LIST_QUEUE_2);
-			list_file(FIRST, LIST_TEMP_2);
 		}
 	}
 
-	filest(LIST_TEMP_2);
-	while (list_size[LIST_TEMP_2] > 0) {
-		list_remove(FIRST, LIST_TEMP_2);
-	}
 	sampst(list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3], SAMPST_NUMBER_BUS);
 	event_schedule(sim_time + j, EVENT_LOADING_2);
 	
@@ -180,21 +195,25 @@ void service_2() {
 
 void service_3() {
 	float j = 0;
-	while (j < 300 /*&& (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20*/) {
-		list_remove(FIRST, LIST_QUEUE_3);
-		if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] < 20) {
+	while (j < 5 && (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3]) < 20) {
+		float temp;
+		// if (list_size[LIST_QUEUE_3] > 0) {
+		// 	list_remove(FIRST, LIST_QUEUE_3);
+		// }
+		temp = transfer[1];
+		if (j < 5) {
 			list_file (LAST, LIST_BUS_3);
 			j += uniform(min_loading, max_loading, STREAM_LOADING);
-		} else if (list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3] >= 20) {
+			if (sim_time - temp > 0) {
+				sampst(sim_time - temp, SAMPST_WAITING_TIME_3);
+			} else {
+				sampst(0, SAMPST_WAITING_TIME_3);
+			}
+		} else if (j >= 5) {
 			list_file(FIRST, LIST_QUEUE_3);
-			list_file(FIRST, LIST_TEMP_3);
 		}
 	}
 
-	filest(LIST_TEMP_3);
-	while (list_size[LIST_TEMP_3] > 0) {	
-		list_remove(FIRST, LIST_TEMP_3);
-	}
 	sampst(list_size[LIST_BUS_1] + list_size[LIST_BUS_2] + list_size[LIST_BUS_3], SAMPST_NUMBER_BUS);
 	event_schedule(sim_time + j, EVENT_LOADING_3);
 
@@ -216,8 +235,8 @@ void service_3() {
 void report() {
 	fprintf (outfile, "\nTime simulation ended:%12.3f minutes\n", sim_time);
 
-	fprintf (outfile, "\na. Average and maximum number in each queue\n");
-	out_filest (outfile, LIST_TEMP_1, LIST_TEMP_3);
+	//fprintf (outfile, "\na. Average and maximum number in each queue\n");
+	//out_filest (outfile, LIST_TEMP_1, LIST_TEMP_3);
 
 	fprintf (outfile, "\nc. Average and maximum number on the bus\n");
 	out_sampst (outfile, SAMPST_NUMBER_BUS, SAMPST_NUMBER_BUS);
@@ -227,6 +246,9 @@ void report() {
 	
 	fprintf (outfile, "\ne. Average, maximum, and minimum time for the bus to make a loop\n");
 	out_sampst (outfile, SAMPST_LOOP_TIME, SAMPST_LOOP_TIME);
+
+	fprintf (outfile, "\nf. Average, maximum, and minimum time a person is in the system by arrival location\n");
+	out_sampst (outfile, SAMPST_WAITING_TIME_1, SAMPST_WAITING_TIME_3);
 }
 
 int main() {
